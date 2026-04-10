@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apothecary Fragrance — Bespoke Scent Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #F5F0E8; --parchment: #EDE5D0; --warm-dark: #2C2318;
+    --amber: #8B5E3C; --amber-light: #C49A6C; --sage: #6B7C5E;
+    --muted: #6B6259; --border: rgba(139,94,60,0.22);
+    --admin-bg: #1A1410; --admin-surface: #231C15;
+    --admin-border: rgba(196,154,108,0.15); --admin-accent: #C49A6C;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Georgia', serif; background: var(--cream); color: var(--warm-dark); font-size: 16px; line-height: 1.7; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 2.5rem; background: var(--cream); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 200; }
+  .nav-logo { display: flex; flex-direction: column; gap: 1px; }
+  .nav-logo-main { font-size: 17px; letter-spacing: 0.05em; color: var(--warm-dark); }
+  .nav-logo-sub { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber-light); font-style: italic; }
+  .nav-links { display: flex; gap: 2rem; align-items: center; }
+  .nav-link { font-size: 13px; font-style: italic; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; font-family: 'Georgia', serif; }
+  .nav-link:hover { color: var(--amber); }
+  .nav-cta { font-size: 12px; padding: 8px 20px; background: var(--warm-dark); color: var(--cream); border: none; cursor: pointer; letter-spacing: 0.08em; font-family: 'Georgia', serif; }
+  .nav-cta:hover { background: var(--amber); }
+  .page { display: none; }
+  .page.active { display: block; }
+  .hero { min-height: 88vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 5rem 2rem; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(196,154,108,0.12) 0%, transparent 70%); pointer-events: none; }
+  .hero-eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber-light); margin-bottom: 1.5rem; font-style: italic; }
+  .hero-title { font-size: clamp(36px, 6vw, 62px); font-weight: 400; line-height: 1.12; color: var(--warm-dark); margin-bottom: 1.5rem; max-width: 640px; margin-left: auto; margin-right: auto; }
+  .hero-title em { color: var(--amber); }
+  .hero-sub { font-size: 16px; color: var(--muted); max-width: 440px; margin: 0 auto 2.5rem; line-height: 1.85; font-style: italic; }
+  .hero-rule { width: 36px; height: 1px; background: var(--amber-light); margin: 0 auto 2.5rem; }
+  .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn-dark { padding: 13px 32px; background: var(--warm-dark); color: var(--cream); border: none; cursor: pointer; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Georgia', serif; }
+  .btn-dark:hover { background: var(--amber); }
+  .btn-ghost { padding: 13px 32px; background: transparent; color: var(--warm-dark); border: 1px solid rgba(44,35,24,0.35); cursor: pointer; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Georgia', serif; }
+  .btn-ghost:hover { border-color: var(--amber); color: var(--amber); }
+  .section { padding: 5rem 2rem; max-width: 900px; margin: 0 auto; }
+  .section-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber-light); margin-bottom: 1rem; font-style: italic; }
+  .section-title { font-size: clamp(24px, 3vw, 34px); font-weight: 400; color: var(--warm-dark); margin-bottom: 1.25rem; line-height: 1.25; }
+  .section-body { font-size: 15px; color: var(--muted); line-height: 1.9; font-style: italic; max-width: 580px; }
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; }
+  .pillar { padding: 1.75rem 1.5rem; background: var(--parchment); border-top: 1.5px solid var(--amber-light); }
+  .pillar-title { font-size: 15px; color: var(--warm-dark); margin-bottom: 0.75rem; }
+  .pillar-body { font-size: 13px; color: var(--muted); line-height: 1.8; font-style: italic; }
+  .process { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 3rem; }
+  .step { padding: 2rem 1.5rem; border-top: 1.5px solid var(--amber-light); }
+  .step-num { font-size: 11px; letter-spacing: 0.14em; color: var(--amber-light); margin-bottom: 1rem; font-style: italic; }
+  .step-title { font-size: 14px; color: var(--warm-dark); margin-bottom: 0.5rem; }
+  .step-body { font-size: 13px; color: var(--muted); line-height: 1.75; font-style: italic; }
+  .parchment-band { background: var(--parchment); }
+  .cta-band { background: var(--warm-dark); padding: 5rem 2rem; text-align: center; }
+  .cta-band .section-eyebrow { color: var(--amber-light); }
+  .cta-band .section-title { color: var(--cream); max-width: 500px; margin: 0 auto 1rem; }
+  .cta-band .section-body { color: rgba(245,240,232,0.55); margin: 0 auto 2.5rem; }
+  .auth-outer { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
+  .auth-card { width: 100%; max-width: 400px; background: #fff; border: 0.5px solid var(--border); padding: 2.5rem 2rem; }
+  .auth-title { font-size: 24px; font-weight: 400; color: var(--warm-dark); margin-bottom: 0.5rem; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 2rem; line-height: 1.7; font-style: italic; }
+  .field { margin-bottom: 1.1rem; }
+  .field label { display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
+  .field input, .field textarea, .field select { width: 100%; padding: 10px 12px; font-size: 14px; border: 0.5px solid rgba(139,94,60,0.3); background: var(--cream); color: var(--warm-dark); font-family: 'Georgia', serif; outline: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); }
+  .field textarea { resize: vertical; }
+  .auth-btn { width: 100%; padding: 12px; background: var(--warm-dark); color: var(--cream); border: none; cursor: pointer; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Georgia', serif; margin-top: 0.5rem; }
+  .auth-btn:hover { background: var(--amber); }
+  .auth-toggle { font-size: 13px; color: var(--muted); text-align: center; margin-top: 1.25rem; font-style: italic; }
+  .auth-toggle span { color: var(--amber); cursor: pointer; }
+  .err { font-size: 13px; color: #9B2C2C; margin-top: 0.75rem; font-style: italic; text-align: center; min-height: 20px; }
+  .portal-outer { max-width: 920px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+  .portal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
+  .portal-greeting-label { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber-light); margin-bottom: 6px; font-style: italic; }
+  .portal-greeting { font-size: 26px; font-weight: 400; color: var(--warm-dark); }
+  .portal-greeting em { color: var(--amber); }
+  .signout-btn { font-size: 12px; padding: 8px 16px; background: none; border: 0.5px solid var(--border); color: var(--muted); cursor: pointer; font-family: 'Georgia', serif; }
+  .signout-btn:hover { color: var(--amber); border-color: var(--amber); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+  .stat { background: var(--parchment); padding: 1.25rem 1.5rem; border-top: 1.5px solid var(--amber-light); }
+  .stat-num { font-size: 30px; color: var(--warm-dark); }
+  .stat-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; font-style: italic; }
+  .portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .pcard { background: #fff; border: 0.5px solid var(--border); padding: 1.5rem; }
+  .pcard-title { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--border); font-style: italic; }
+  .formula-item { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 0; border-bottom: 0.5px solid rgba(139,94,60,0.1); }
+  .formula-item:last-child { border-bottom: none; }
+  .formula-name { font-size: 14px; color: var(--warm-dark); }
+  .formula-meta { font-size: 12px; color: var(--muted); margin-top: 2px; font-style: italic; }
+  .badge { font-size: 11px; padding: 3px 10px; }
+  .badge-done { background: rgba(107,124,94,0.14); color: var(--sage); }
+  .badge-wip { background: rgba(139,94,60,0.12); color: var(--amber); }
+  .consult-item { display: flex; gap: 12px; padding: 0.85rem 0; border-bottom: 0.5px solid rgba(139,94,60,0.1); align-items: flex-start; }
+  .consult-item:last-child { border-bottom: none; }
+  .consult-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber-light); margin-top: 6px; flex-shrink: 0; }
+  .consult-name { font-size: 14px; color: var(--warm-dark); }
+  .consult-date { font-size: 12px; color: var(--muted); font-style: italic; }
+  .chat-full { grid-column: 1 / -1; }
+  .chat-msgs { height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding: 0.5rem 0; }
+  .msg { max-width: 76%; }
+  .msg.them { align-self: flex-start; }
+  .msg.me { align-self: flex-end; }
+  .msg-bubble { padding: 10px 14px; font-size: 13px; line-height: 1.65; font-style: italic; }
+  .msg.them .msg-bubble { background: var(--parchment); color: var(--warm-dark); }
+  .msg.me .msg-bubble { background: var(--warm-dark); color: var(--cream); }
+  .msg-time { font-size: 11px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+  .msg.me .msg-time { text-align: right; }
+  .chat-input-row { display: flex; gap: 8px; margin-top: 1rem; padding-top: 1rem; border-top: 0.5px solid var(--border); }
+  .chat-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 0.5px solid rgba(139,94,60,0.3); background: var(--cream); color: var(--warm-dark); font-family: 'Georgia', serif; font-style: italic; outline: none; }
+  .chat-input:focus { border-color: var(--amber); }
+  .chat-send { padding: 10px 20px; background: var(--warm-dark); color: var(--cream); border: none; cursor: pointer; font-size: 12px; font-family: 'Georgia', serif; }
+  .chat-send:hover { background: var(--amber); }
+  .loading { font-size: 13px; color: var(--muted); font-style: italic; padding: 1rem 0; }
+  .consult-outer { max-width: 560px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+  .success-box { display: none; background: rgba(107,124,94,0.1); border-left: 2px solid var(--sage); padding: 1.25rem 1.5rem; font-size: 14px; color: var(--sage); margin-top: 1.5rem; font-style: italic; }
+
+  /* ADMIN */
+  #page-admin { background: var(--admin-bg); min-height: 100vh; color: #E8DDD0; }
+  .admin-nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 0.5px solid var(--admin-border); background: var(--admin-surface); }
+  .admin-nav-logo { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--admin-accent); }
+  .admin-nav-logo span { color: rgba(232,221,208,0.35); font-size: 11px; margin-left: 8px; }
+  .admin-signout { font-size: 11px; padding: 6px 14px; background: none; border: 0.5px solid var(--admin-border); color: rgba(232,221,208,0.4); cursor: pointer; font-family: 'Georgia', serif; }
+  .admin-signout:hover { color: var(--admin-accent); border-color: var(--admin-accent); }
+  .admin-body { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 52px); }
+  .admin-sidebar { background: var(--admin-surface); border-right: 0.5px solid var(--admin-border); padding: 1.5rem 0; }
+  .admin-sidebar-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(196,154,108,0.4); padding: 0 1.5rem; margin-bottom: 0.75rem; }
+  .client-row { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1.5rem; cursor: pointer; border-left: 2px solid transparent; }
+  .client-row:hover { background: rgba(196,154,108,0.06); }
+  .client-row.active { border-left-color: var(--admin-accent); background: rgba(196,154,108,0.08); }
+  .client-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(196,154,108,0.12); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--admin-accent); flex-shrink: 0; }
+  .client-name { font-size: 13px; color: #E8DDD0; }
+  .client-email-s { font-size: 11px; color: rgba(232,221,208,0.35); font-style: italic; }
+  .admin-main { padding: 2rem; overflow-y: auto; }
+  .admin-empty { display: flex; align-items: center; justify-content: center; height: 300px; color: rgba(232,221,208,0.25); font-style: italic; font-size: 14px; }
+  .admin-client-header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--admin-border); }
+  .admin-client-name { font-size: 22px; color: #E8DDD0; }
+  .admin-client-email { font-size: 13px; color: rgba(232,221,208,0.4); font-style: italic; margin-top: 2px; }
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .admin-card { background: var(--admin-surface); border: 0.5px solid var(--admin-border); padding: 1.25rem; }
+  .admin-card-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--admin-accent); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--admin-border); }
+  .admin-formula-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 0.5px solid rgba(196,154,108,0.08); font-size: 13px; }
+  .admin-formula-item:last-child { border-bottom: none; }
+  .admin-formula-name { color: #E8DDD0; }
+  .admin-formula-meta { font-size: 11px; color: rgba(232,221,208,0.35); font-style: italic; }
+  .admin-badge { font-size: 11px; padding: 2px 8px; }
+  .admin-badge-done { background: rgba(107,124,94,0.2); color: #8FA882; }
+  .admin-badge-wip { background: rgba(196,154,108,0.15); color: var(--admin-accent); }
+  .admin-consult-item { padding: 0.75rem 0; border-bottom: 0.5px solid rgba(196,154,108,0.08); }
+  .admin-consult-item:last-child { border-bottom: none; }
+  .admin-consult-title { font-size: 13px; color: #E8DDD0; }
+  .admin-consult-vision { font-size: 12px; color: rgba(232,221,208,0.4); font-style: italic; margin-top: 3px; line-height: 1.5; }
+  .admin-chat-full { grid-column: 1 / -1; }
+  .admin-chat-msgs { height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 0.5rem 0; }
+  .admin-msg { max-width: 76%; }
+  .admin-msg.client { align-self: flex-start; }
+  .admin-msg.admin-sent { align-self: flex-end; }
+  .admin-msg-bubble { padding: 9px 13px; font-size: 13px; line-height: 1.6; font-style: italic; }
+  .admin-msg.client .admin-msg-bubble { background: rgba(196,154,108,0.08); color: #E8DDD0; border-left: 2px solid var(--admin-accent); }
+  .admin-msg.admin-sent .admin-msg-bubble { background: rgba(196,154,108,0.18); color: #E8DDD0; }
+  .admin-msg-time { font-size: 11px; color: rgba(232,221,208,0.28); margin-top: 3px; padding: 0 4px; }
+  .admin-msg.admin-sent .admin-msg-time { text-align: right; }
+  .admin-chat-input-row { display: flex; gap: 8px; margin-top: 1rem; padding-top: 1rem; border-top: 0.5px solid var(--admin-border); }
+  .admin-chat-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 0.5px solid var(--admin-border); background: rgba(196,154,108,0.05); color: #E8DDD0; font-family: 'Georgia', serif; font-style: italic; outline: none; }
+  .admin-chat-input:focus { border-color: var(--admin-accent); }
+  .admin-chat-send { padding: 10px 20px; background: var(--admin-accent); color: var(--admin-bg); border: none; cursor: pointer; font-size: 12px; font-family: 'Georgia', serif; }
+  .admin-chat-send:hover { background: #D4A97C; }
+  .admin-notes-input { width: 100%; padding: 10px 12px; font-size: 13px; border: 0.5px solid var(--admin-border); background: rgba(196,154,108,0.05); color: #E8DDD0; font-family: 'Georgia', serif; font-style: italic; outline: none; resize: vertical; min-height: 80px; }
+  .admin-notes-input:focus { border-color: var(--admin-accent); }
+  .admin-save-btn { margin-top: 0.75rem; padding: 8px 18px; background: none; border: 0.5px solid var(--admin-accent); color: var(--admin-accent); cursor: pointer; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Georgia', serif; }
+  .admin-save-btn:hover { background: rgba(196,154,108,0.1); }
+  .no-clients { padding: 1.5rem; font-size: 13px; color: rgba(232,221,208,0.3); font-style: italic; }
+  .empty-state { font-size: 13px; color: rgba(232,221,208,0.3); font-style: italic; }
+
+  @media (max-width: 680px) {
+    .pillars, .process { grid-template-columns: 1fr; }
+    .portal-grid, .admin-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .admin-body { grid-template-columns: 1fr; }
+    nav { padding: 1rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="main-nav">
+  <div class="nav-logo">
+    <span class="nav-logo-main">Apothecary Fragrance</span>
+    <span class="nav-logo-sub">Bespoke Scent Studio · New York</span>
+  </div>
+  <div class="nav-links">
+    <button class="nav-link" onclick="show('home')">Home</button>
+    <button class="nav-link" onclick="show('consult')">Book a Consult</button>
+    <button class="nav-cta" id="nav-portal-btn" onclick="handlePortalClick()">Client Portal</button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div>
+      <p class="hero-eyebrow">New York &mdash; Est. 2025</p>
+      <h1 class="hero-title">Your scent, exactly as you <em>remember it</em></h1>
+      <div class="hero-rule"></div>
+      <p class="hero-sub">We craft singular, unrepeatable fragrances tailored to your memory, your moment, your life. No guessing. No settling. Just you.</p>
+      <div class="hero-btns">
+        <button class="btn-dark" onclick="show('consult')">Begin your consultation</button>
+        <button class="btn-ghost" onclick="handlePortalClick()">Client portal</button>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <p class="section-eyebrow">The philosophy</p>
+    <h2 class="section-title">Scent is memory. Memory is identity.</h2>
+    <p class="section-body">Smell is the most ancient of our senses — and the most honest. It bypasses logic and goes straight to the soul. We believe you deserve a fragrance that carries your story, not someone else's.</p>
+    <div class="pillars">
+      <div class="pillar"><p class="pillar-title">Entirely yours</p><p class="pillar-body">Every formula is a one-of-one. We never reproduce it for anyone else without your permission.</p></div>
+      <div class="pillar"><p class="pillar-title">For every occasion</p><p class="pillar-body">From your everyday signature to a wedding scent, a travel memory, or an anniversary — we build for moments.</p></div>
+      <div class="pillar"><p class="pillar-title">A lasting relationship</p><p class="pillar-body">We keep your formula on file. As your life changes, your scent can evolve with it.</p></div>
+    </div>
+  </div>
+  <div class="parchment-band">
+    <div class="section">
+      <p class="section-eyebrow">How it works</p>
+      <h2 class="section-title">From conversation to creation</h2>
+      <div class="process">
+        <div class="step"><p class="step-num">01</p><p class="step-title">Consult</p><p class="step-body">We talk — your memories, preferences, and the occasion you have in mind.</p></div>
+        <div class="step"><p class="step-num">02</p><p class="step-title">Compose</p><p class="step-body">Our nose crafts a bespoke formula built around your sensory story.</p></div>
+        <div class="step"><p class="step-num">03</p><p class="step-title">Refine</p><p class="step-body">You experience it. We adjust until it is unmistakably right.</p></div>
+        <div class="step"><p class="step-num">04</p><p class="step-title">Preserve</p><p class="step-body">Your formula is archived in your client file. Reorder or evolve it — forever.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="cta-band">
+    <p class="section-eyebrow">Ready?</p>
+    <h2 class="section-title">Stop searching. Start creating.</h2>
+    <p class="section-body">Whether you're on the Upper East Side or in Ann Arbor, you deserve a scent that is entirely, unapologetically yours.</p>
+    <div class="hero-btns" style="margin-top:2rem;">
+      <button class="btn-dark" style="background:var(--cream);color:var(--warm-dark);" onclick="show('consult')">Book a consultation</button>
+      <button class="btn-ghost" style="border-color:rgba(245,240,232,0.3);color:var(--cream);" onclick="handlePortalClick()">Sign in to your portal</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="page-auth" class="page">
+  <div class="auth-outer">
+    <div class="auth-card">
+      <div id="auth-login-view">
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-sub">Sign in to view your orders, consultations, and message us directly.</p>
+        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" /></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+        <button class="auth-btn" onclick="doLogin()">Sign in</button>
+        <p class="err" id="login-error"></p>
+        <p class="auth-toggle">No account yet? <span onclick="toggleAuth('register')">Create one</span></p>
+      </div>
+      <div id="auth-register-view" style="display:none;">
+        <h2 class="auth-title">Create your account</h2>
+        <p class="auth-sub">Join to start your bespoke fragrance journey and keep all your scents in one place.</p>
+        <div class="field"><label>Full name</label><input type="text" id="reg-name" placeholder="Your name" /></div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" />
+          <p style="font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;">You'll receive a verification email before you can sign in.</p>
+        </div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="Choose a password (min 6 chars)" /></div>
+        <button class="auth-btn" onclick="doRegister()">Create account</button>
+        <p class="err" id="reg-error"></p>
+        <p class="auth-toggle">Already have an account? <span onclick="toggleAuth('login')">Sign in</span></p>
+      </div>
+      <div id="auth-verify-view" style="display:none;">
+        <h2 class="auth-title">Check your inbox</h2>
+        <p class="auth-sub" style="margin-bottom:0;">We've sent a verification link to <strong id="verify-email-shown" style="color:var(--amber);font-style:normal;"></strong>. Click the link in that email to activate your account, then return here to sign in.</p>
+        <div style="margin-top:2rem;padding:1rem 1.25rem;background:var(--parchment);border-left:2px solid var(--amber-light);font-size:13px;color:var(--muted);font-style:italic;">If you don't see it within a few minutes, check your spam folder.</div>
+        <p class="auth-toggle" style="margin-top:1.5rem;"><span onclick="toggleAuth('login')">Back to sign in</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PORTAL -->
+<div id="page-portal" class="page">
+  <div class="portal-outer">
+    <div class="portal-head">
+      <div>
+        <p class="portal-greeting-label">Client portal</p>
+        <h2 class="portal-greeting">Good to see you, <em id="portal-name">...</em></h2>
+      </div>
+      <button class="signout-btn" onclick="doSignOut()">Sign out</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><p class="stat-num" id="stat-formulas">—</p><p class="stat-label">Custom formulas</p></div>
+      <div class="stat"><p class="stat-num" id="stat-consults">—</p><p class="stat-label">Consultations</p></div>
+      <div class="stat"><p class="stat-num" id="stat-msgs">—</p><p class="stat-label">Messages</p></div>
+    </div>
+    <div class="portal-grid">
+      <div class="pcard">
+        <p class="pcard-title">Your formulas</p>
+        <div id="formulas-list"><p class="loading">Loading...</p></div>
+        <button class="btn-ghost" style="margin-top:1.25rem;font-size:12px;padding:9px 20px;width:100%;" onclick="show('consult')">Request a new formula</button>
+      </div>
+      <div class="pcard">
+        <p class="pcard-title">Consultations</p>
+        <div id="consults-list"><p class="loading">Loading...</p></div>
+        <button class="btn-ghost" style="margin-top:1.25rem;font-size:12px;padding:9px 20px;width:100%;" onclick="show('consult')">Book new consultation</button>
+      </div>
+      <div class="pcard chat-full">
+        <p class="pcard-title">Messages</p>
+        <div class="chat-msgs" id="chat-msgs"><p class="loading">Loading...</p></div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="Send a message to the studio..." onkeydown="if(event.key==='Enter')sendClientMessage()" />
+          <button class="chat-send" onclick="sendClientMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="page-admin" class="page">
+  <nav class="admin-nav">
+    <span class="admin-nav-logo">Apothecary Fragrance <span>Studio Dashboard</span></span>
+    <button class="admin-signout" onclick="doSignOut()">Sign out</button>
+  </nav>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <p class="admin-sidebar-label">Clients</p>
+      <div id="admin-client-list"><p class="no-clients">No clients yet.</p></div>
+    </div>
+    <div class="admin-main" id="admin-main">
+      <div class="admin-empty">Select a client to view their profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONSULT -->
+<div id="page-consult" class="page">
+  <div class="consult-outer">
+    <p class="section-eyebrow" style="margin-bottom:0.5rem;">Book a consultation</p>
+    <h2 class="section-title">Tell us about the scent you're searching for</h2>
+    <p class="section-body" style="margin-bottom:2.5rem;font-size:14px;">Every fragrance begins with a conversation. Share a bit about yourself — we'll be in touch within 48 hours.</p>
+    <div id="consult-form">
+      <div class="field"><label>Full name</label><input type="text" id="c-name" placeholder="Your name" /></div>
+      <div class="field"><label>Email</label><input type="email" id="c-email" placeholder="your@email.com" /></div>
+      <div class="field"><label>Occasion</label>
+        <select id="c-occasion">
+          <option value="">Select one...</option>
+          <option>Everyday signature scent</option>
+          <option>Wedding or ceremony</option>
+          <option>Anniversary or milestone</option>
+          <option>Travel or place memory</option>
+          <option>Gift for someone</option>
+          <option>Other / not sure yet</option>
+        </select>
+      </div>
+      <div class="field"><label>Your scent vision</label><textarea id="c-vision" rows="5" placeholder="Describe a memory, a feeling, notes you love or hate..."></textarea></div>
+      <div class="field"><label>Your fragrance experience</label>
+        <select id="c-experience">
+          <option value="">Select one...</option>
+          <option>I know exactly what I want</option>
+          <option>I have a general direction in mind</option>
+          <option>I'm open — guide me</option>
+        </select>
+      </div>
+      <button class="auth-btn" onclick="submitConsult()">Request consultation</button>
+      <p class="err" id="consult-error"></p>
+    </div>
+    <div class="success-box" id="consult-success">Your consultation request has been received. We'll be in touch within 48 hours. We can't wait to begin.</div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pfcwvvzlpcemnulawzms.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XG5I1TBqBBMDTLzecODR6g_MnE59TGp';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null, isAdmin = false, selectedClientId = null;
+
+function show(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('main-nav').style.display = page === 'admin' ? 'none' : 'flex';
+  window.scrollTo(0, 0);
+}
+
+function handlePortalClick() {
+  if (!currentUser) { show('auth'); return; }
+  show(isAdmin ? 'admin' : 'portal');
+}
+
+function toggleAuth(view) {
+  document.getElementById('auth-login-view').style.display = view === 'login' ? 'block' : 'none';
+  document.getElementById('auth-register-view').style.display = view === 'register' ? 'block' : 'none';
+  document.getElementById('auth-verify-view').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  document.getElementById('login-error').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { document.getElementById('login-error').textContent = error.message; return; }
+  currentUser = data.user;
+  await afterLogin();
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  document.getElementById('reg-error').textContent = '';
+  if (!name || !email || !password) { document.getElementById('reg-error').textContent = 'Please fill in all fields.'; return; }
+  const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+  if (error) { document.getElementById('reg-error').textContent = error.message; return; }
+  document.getElementById('verify-email-shown').textContent = email;
+  document.getElementById('auth-register-view').style.display = 'none';
+  document.getElementById('auth-verify-view').style.display = 'block';
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  currentUser = null; isAdmin = false; selectedClientId = null;
+  document.getElementById('nav-portal-btn').textContent = 'Client Portal';
+  show('home');
+}
+
+async function afterLogin() {
+  const { data: profile } = await sb.from('profiles').select('full_name, is_admin').eq('id', currentUser.id).single();
+  isAdmin = profile?.is_admin === true;
+  document.getElementById('nav-portal-btn').textContent = isAdmin ? 'Dashboard' : 'My Portal';
+  if (isAdmin) { show('admin'); loadAdminClients(); }
+  else {
+    document.getElementById('portal-name').textContent = profile?.full_name || currentUser.email.split('@')[0];
+    show('portal');
+    loadFormulas(); loadConsults(); loadClientMessages();
+  }
+}
+
+async function loadFormulas() {
+  const { data } = await sb.from('formulas').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false });
+  document.getElementById('stat-formulas').textContent = data?.length || 0;
+  const el = document.getElementById('formulas-list');
+  if (!data?.length) { el.innerHTML = '<p class="loading">No formulas yet.</p>'; return; }
+  el.innerHTML = data.map(f => `<div class="formula-item"><div><p class="formula-name">${f.name}</p><p class="formula-meta">${f.occasion||''} · ${new Date(f.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</p></div><span class="badge ${f.status==='complete'?'badge-done':'badge-wip'}">${f.status==='complete'?'Complete':f.status==='refinement'?'Refinement':'In progress'}</span></div>`).join('');
+}
+
+async function loadConsults() {
+  const { data } = await sb.from('consultations').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: false });
+  document.getElementById('stat-consults').textContent = data?.length || 0;
+  const el = document.getElementById('consults-list');
+  if (!data?.length) { el.innerHTML = '<p class="loading">No consultations yet.</p>'; return; }
+  el.innerHTML = data.map(c => `<div class="consult-item"><div class="consult-dot"></div><div><p class="consult-name">${c.title}</p><p class="consult-date">${new Date(c.created_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p></div></div>`).join('');
+}
+
+async function loadClientMessages() {
+  const { data } = await sb.from('messages').select('*').eq('client_id', currentUser.id).order('created_at', { ascending: true });
+  document.getElementById('stat-msgs').textContent = data?.length || 0;
+  const el = document.getElementById('chat-msgs');
+  if (!data?.length) { el.innerHTML = '<p class="loading">No messages yet. Say hello!</p>'; return; }
+  el.innerHTML = data.map(m => `<div class="msg ${m.sender==='client'?'me':'them'}"><div class="msg-bubble">${m.body}</div><p class="msg-time">${m.sender==='client'?'You':'Apothecary'} · ${new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</p></div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendClientMessage() {
+  const input = document.getElementById('chat-input');
+  const body = input.value.trim();
+  if (!body || !currentUser) return;
+  input.value = '';
+  await sb.from('messages').insert({ client_id: currentUser.id, sender: 'client', body });
+  loadClientMessages();
+}
+
+async function loadAdminClients() {
+  const { data } = await sb.from('profiles').select('*').eq('is_admin', false).order('created_at', { ascending: false });
+  const el = document.getElementById('admin-client-list');
+  if (!data?.length) { el.innerHTML = '<p class="no-clients">No clients yet.</p>'; return; }
+  el.innerHTML = data.map(p => {
+    const initials = (p.full_name||p.email||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const safeName = (p.full_name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeEmail = (p.email||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="client-row" id="cr-${p.id}" onclick="loadAdminClient('${p.id}','${safeName}','${safeEmail}')"><div class="client-avatar">${initials}</div><div><p class="client-name">${p.full_name||'Unnamed'}</p><p class="client-email-s">${p.email||''}</p></div></div>`;
+  }).join('');
+}
+
+async function loadAdminClient(clientId, name, email) {
+  selectedClientId = clientId;
+  document.querySelectorAll('.client-row').forEach(r => r.classList.remove('active'));
+  const row = document.getElementById('cr-' + clientId);
+  if (row) row.classList.add('active');
+
+  const [fRes, cRes, mRes, pRes] = await Promise.all([
+    sb.from('formulas').select('*').eq('client_id', clientId).order('created_at',{ascending:false}),
+    sb.from('consultations').select('*').eq('client_id', clientId).order('created_at',{ascending:false}),
+    sb.from('messages').select('*').eq('client_id', clientId).order('created_at',{ascending:true}),
+    sb.from('profiles').select('notes').eq('id', clientId).single()
+  ]);
+
+  const formulas = fRes.data||[], consults = cRes.data||[], msgs = mRes.data||[];
+  const notes = pRes.data?.notes||'';
+  const empty = '<p class="empty-state">None yet.</p>';
+
+  const fHTML = formulas.length ? formulas.map(f=>`<div class="admin-formula-item"><div><p class="admin-formula-name">${f.name}</p><p class="admin-formula-meta">${f.occasion||''}</p></div><span class="admin-badge ${f.status==='complete'?'admin-badge-done':'admin-badge-wip'}">${f.status==='complete'?'Complete':'In progress'}</span></div>`).join('') : empty;
+  const cHTML = consults.length ? consults.map(c=>`<div class="admin-consult-item"><p class="admin-consult-title">${c.title}</p>${c.scent_vision?`<p class="admin-consult-vision">"${c.scent_vision}"</p>`:''}<p style="font-size:11px;color:rgba(232,221,208,0.28);margin-top:3px;font-style:italic;">${new Date(c.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</p></div>`).join('') : empty;
+  const mHTML = msgs.length ? msgs.map(m=>`<div class="admin-msg ${m.sender==='client'?'client':'admin-sent'}"><div class="admin-msg-bubble">${m.body}</div><p class="admin-msg-time">${m.sender==='client'?name:'You'} · ${new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</p></div>`).join('') : '<p class="empty-state">No messages yet.</p>';
+
+  document.getElementById('admin-main').innerHTML = `
+    <div class="admin-client-header">
+      <h2 class="admin-client-name">${name||'Client'}</h2>
+      <p class="admin-client-email">${email}</p>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-card"><p class="admin-card-title">Formulas</p>${fHTML}</div>
+      <div class="admin-card"><p class="admin-card-title">Consultations</p>${cHTML}</div>
+      <div class="admin-card admin-chat-full">
+        <p class="admin-card-title">Messages</p>
+        <div class="admin-chat-msgs" id="admin-chat-msgs">${mHTML}</div>
+        <div class="admin-chat-input-row">
+          <input class="admin-chat-input" id="admin-chat-input" placeholder="Reply to ${name}..." onkeydown="if(event.key==='Enter')sendAdminMessage('${clientId}')" />
+          <button class="admin-chat-send" onclick="sendAdminMessage('${clientId}')">Send</button>
+        </div>
+      </div>
+      <div class="admin-card admin-chat-full">
+        <p class="admin-card-title">Private notes</p>
+        <textarea class="admin-notes-input" id="admin-notes" placeholder="Scent preferences, sensitivities, upcoming occasions...">${notes}</textarea>
+        <button class="admin-save-btn" onclick="saveNotes('${clientId}')">Save notes</button>
+      </div>
+    </div>`;
+
+  const chatEl = document.getElementById('admin-chat-msgs');
+  if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function sendAdminMessage(clientId) {
+  const input = document.getElementById('admin-chat-input');
+  const body = input.value.trim();
+  if (!body) return;
+  input.value = '';
+  await sb.from('messages').insert({ client_id: clientId, sender: 'admin', body });
+  loadAdminClient(clientId, document.querySelector('.admin-client-name')?.textContent||'', document.querySelector('.admin-client-email')?.textContent||'');
+}
+
+async function saveNotes(clientId) {
+  const notes = document.getElementById('admin-notes').value;
+  await sb.from('profiles').update({ notes }).eq('id', clientId);
+  const btn = document.querySelector('.admin-save-btn');
+  if (btn) { btn.textContent = 'Saved!'; setTimeout(()=>btn.textContent='Save notes', 2000); }
+}
+
+async function submitConsult() {
+  const name = document.getElementById('c-name').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const occasion = document.getElementById('c-occasion').value;
+  const vision = document.getElementById('c-vision').value.trim();
+  const experience = document.getElementById('c-experience').value;
+  document.getElementById('consult-error').textContent = '';
+  if (!name || !email || !vision) { document.getElementById('consult-error').textContent = 'Please fill in your name, email, and scent vision.'; return; }
+  if (currentUser && !isAdmin) {
+    await sb.from('consultations').insert({ client_id: currentUser.id, title: occasion||'New consultation', occasion, experience_level: experience, scent_vision: vision, status: 'pending' });
+  }
+  document.getElementById('consult-form').style.display = 'none';
+  document.getElementById('consult-success').style.display = 'block';
+}
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    const { data: profile } = await sb.from('profiles').select('full_name, is_admin').eq('id', currentUser.id).single();
+    isAdmin = profile?.is_admin === true;
+    document.getElementById('nav-portal-btn').textContent = isAdmin ? 'Dashboard' : 'My Portal';
+    if (!isAdmin) document.getElementById('portal-name').textContent = profile?.full_name || currentUser.email.split('@')[0];
+  }
+})();
+</script>
+</body>
+</html>
